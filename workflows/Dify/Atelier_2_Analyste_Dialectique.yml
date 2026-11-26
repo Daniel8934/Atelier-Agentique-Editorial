@@ -1,0 +1,133 @@
+app:
+  description: "Atelier 2 - Analyse de fond : extraction d'arguments, audit de données, contradictions et trous logiques."
+  icon: ⚖️
+  icon_background: "#E1F5FE"
+  mode: workflow
+  name: "Atelier 2 : Analyste Dialectique"
+kind: app
+version: 0.1.2
+workflow:
+  features:
+    file_upload:
+      image:
+        enabled: false
+    opening_statement: ""
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: start-arguments
+      source: "start_node"
+      target: "extraction_arguments"
+    - data:
+        sourceType: llm
+        targetType: llm
+      id: arguments-dialectique
+      source: "extraction_arguments"
+      target: "analyse_dialectique"
+    - data:
+        sourceType: llm
+        targetType: end
+      id: dialectique-end
+      source: "analyse_dialectique"
+      target: "end_node"
+    nodes:
+    - data:
+        desc: ""
+        selected: false
+        title: Début
+        type: start
+        variables:
+        - label: Texte Normalisé (issu Atelier 1)
+          max_length: 200000
+          options: []
+          required: true
+          type: paragraph
+          variable: input_text
+      id: "start_node"
+      position:
+        x: 80
+        y: 280
+      type: start
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.1
+          mode: chat
+          name: gemini-1.5-flash
+          provider: google
+        prompt_template:
+        - id: system
+          role: system
+          text: "Tu es un analyste de données et de preuves. Ta mission est d'extraire la substance factuelle et argumentative du texte.\n\nCONSIGNES :\n1. Liste les arguments principaux (thèses).\n2. Isole toutes les données chiffrées, dates et faits vérifiables.\n3. Présente cela de manière structurée : \n   ### Arguments Clés\n   - [Argument] : [Brève explication]\n   ### Données & Faits\n   - [Donnée] : [Contexte]\n\nREMARQUE : Sois clinique et précis. Ne fais pas d'interprétation littéraire."
+        - id: user
+          role: user
+          text: "Voici le texte à analyser :\n\n{{input_text}}"
+        selected: false
+        title: Extraction Arguments & Données
+        type: llm
+        variables: []
+      id: extraction_arguments
+      position:
+        x: 320
+        y: 280
+      type: llm
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.4
+          mode: chat
+          name: gemini-1.5-flash
+          provider: google
+        prompt_template:
+        - id: system
+          role: system
+          text: "Tu es un expert en logique et en rhétorique. Ta mission est de trouver les points de friction et les faiblesses du texte.\n\nCONSIGNES :\n1. Repère les contradictions internes (ex: une affirmation au début infirmée plus tard).\n2. Identifie les \"trous logiques\" (ex: une conclusion sans prémisse claire, un manque de preuve).\n3. Relève les oppositions entre les différents intervenants s'il y en a.\n\nSTRUCTURE DE RÉPONSE :\n### Contradictions Détectées\n- [Description de la contradiction]\n### Trous Logiques & Zones d'Ombre\n- [Ce qui manque pour que l'argument soit complet]\n### Points de Divergence (si multi-locuteurs)\n- [Qui s'oppose à qui et sur quoi]"
+        - id: user
+          role: user
+          text: "Voici le texte à analyser :\n\n{{input_text}}"
+        selected: false
+        title: Analyse Dialectique
+        type: llm
+        variables: []
+      id: analyse_dialectique
+      position:
+        x: 560
+        y: 280
+      type: llm
+    - data:
+        outputs:
+        - value_selector:
+          - extraction_arguments
+          - text
+          variable: arguments_et_donnees
+        - value_selector:
+          - analyse_dialectique
+          - text
+          variable: audit_logique
+        selected: false
+        title: Fin
+        type: end
+      id: "end_node"
+      position:
+        x: 800
+        y: 280
+      type: end

@@ -1,0 +1,139 @@
+app:
+  description: "Atelier 3 - Structuration : architecture narrative, plan détaillé et traçabilité des sources."
+  icon: 📐
+  icon_background: "#F3E5F5"
+  mode: workflow
+  name: "Atelier 3 : Architecte Éditorial"
+kind: app
+version: 0.1.2
+workflow:
+  features:
+    file_upload:
+      image:
+        enabled: false
+    opening_statement: ""
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: start-vision
+      source: "start_node"
+      target: "vision_narrative"
+    - data:
+        sourceType: llm
+        targetType: llm
+      id: vision-plan
+      source: "vision_narrative"
+      target: "plan_detaille"
+    - data:
+        sourceType: llm
+        targetType: end
+      id: plan-end
+      source: "plan_detaille"
+      target: "end_node"
+    nodes:
+    - data:
+        desc: ""
+        selected: false
+        title: Début
+        type: start
+        variables:
+        - label: Texte Normalisé
+          max_length: 200000
+          options: []
+          required: true
+          type: paragraph
+          variable: input_text
+        - label: Analyse Dialectique (Optionnel)
+          max_length: 50000
+          options: []
+          required: false
+          type: paragraph
+          variable: audit_context
+      id: "start_node"
+      position:
+        x: 80
+        y: 280
+      type: start
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.5
+          mode: chat
+          name: gemini-1.5-flash
+          provider: google
+        prompt_template:
+        - id: system
+          role: system
+          text: "Tu es un architecte de contenu et un stratège narratif. Ton rôle est de définir l'angle et le mouvement du futur texte.\n\nCONSIGNES :\n1. Analyse la matière première et les points critiques fournis.\n2. Propose un \"Arc Narratif\" ou une stratégie de progression logique (ex: du problème à la solution, de l'histoire vers la théorie).\n3. Définis le ton et le rythme conseillés pour ce projet.\n\nFORMAT :\n### Vision Narrative\n[Description du mouvement global]\n### Objectifs Éditoriaux\n- [Objectif 1]\n- [Objectif 2]"
+        - id: user
+          role: user
+          text: "Matière brute : {{input_text}}\n\nContexte d'audit : {{audit_context}}"
+        selected: false
+        title: Vision & Arc Narratif
+        type: llm
+        variables: []
+      id: vision_narrative
+      position:
+        x: 320
+        y: 280
+      type: llm
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gemini-1.5-flash
+          provider: google
+        prompt_template:
+        - id: system
+          role: system
+          text: "Tu es un concepteur de plans détaillés expert. Ta mission est de structurer le document final de manière chirurgicale.\n\nCONSIGNES :\n1. Construis un plan détaillé (Titres, Sous-titres).\n2. Pour CHAQUE section, indique entre parenthèses la source ou l'idée clé correspondante extraite de la matière brute.\n3. Assure-toi que la structure respecte la Vision Narrative établie précédemment.\n\nCONTRAINTE : Chaque titre doit être accompagné d'un bref résumé de ce qu'il doit contenir."
+        - id: user
+          role: user
+          text: "Vision adoptée : {{vision_narrative.text}}\n\nMatière première : {{input_text}}"
+        selected: false
+        title: Plan Détaillé & Sources
+        type: llm
+        variables: []
+      id: plan_detaille
+      position:
+        x: 560
+        y: 280
+      type: llm
+    - data:
+        outputs:
+        - value_selector:
+          - vision_narrative
+          - text
+          variable: vision_strategique
+        - value_selector:
+          - plan_detaille
+          - text
+          variable: plan_final
+        selected: false
+        title: Fin
+        type: end
+      id: "end_node"
+      position:
+        x: 800
+        y: 280
+      type: end

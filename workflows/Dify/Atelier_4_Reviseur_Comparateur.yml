@@ -1,0 +1,145 @@
+app:
+  description: "Atelier 4 - Audit final : comparaison de versions, cohérence globale et traçabilité éditoriale."
+  icon: 🔍
+  icon_background: "#E8F5E9"
+  mode: workflow
+  name: "Atelier 4 : Réviseur-Comparateur"
+kind: app
+version: 0.1.2
+workflow:
+  features:
+    file_upload:
+      image:
+        enabled: false
+    opening_statement: ""
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: start-comparaison
+      source: "start_node"
+      target: "comparaison_versions"
+    - data:
+        sourceType: llm
+        targetType: llm
+      id: comparaison-coherence
+      source: "comparaison_versions"
+      target: "audit_coherence"
+    - data:
+        sourceType: llm
+        targetType: end
+      id: coherence-end
+      source: "audit_coherence"
+      target: "end_node"
+    nodes:
+    - data:
+        desc: ""
+        selected: false
+        title: Début
+        type: start
+        variables:
+        - label: Texte Source (Matière brute)
+          max_length: 200000
+          options: []
+          required: true
+          type: paragraph
+          variable: source_text
+        - label: Manuscrit Révisé (Nouvelle version)
+          max_length: 200000
+          options: []
+          required: true
+          type: paragraph
+          variable: revised_text
+        - label: Glossaire / Plan (Contexte)
+          max_length: 50000
+          options: []
+          required: false
+          type: paragraph
+          variable: reference_context
+      id: "start_node"
+      position:
+        x: 80
+        y: 280
+      type: start
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.1
+          mode: chat
+          name: gemini-1.5-pro
+          provider: google
+        prompt_template:
+        - id: system
+          role: system
+          text: "Tu es un expert en audit éditorial et traçabilité. Ton rôle est de comparer la version révisée à la source brute.\n\nCONSIGNES :\n1. Détecte les écarts de faits (ex: une donnée modifiée par erreur).\n2. Repère les changements de sens ou les interprétations qui s'éloignent de l'intention d'origine.\n3. Analyse l'évolution du ton (ex: passage d'un ton technique à un ton trop publicitaire).\n\nFORMAT :\n### Analyse des Écarts\n- [Fait/Sens] : [Description du changement] (Impact : Critique/Mineur)\n### Évolution du Registre\n- [Observation sur le ton et le style]"
+        - id: user
+          role: user
+          text: "SOURCE :\n{{source_text}}\n\nMANUSCRIT RÉVISÉ :\n{{revised_text}}"
+        selected: false
+        title: Comparaison & Traçabilité
+        type: llm
+        variables: []
+      id: comparaison_versions
+      position:
+        x: 320
+        y: 280
+      type: llm
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gemini-1.5-pro
+          provider: google
+        prompt_template:
+        - id: system
+          role: system
+          text: "Tu es un réviseur linguistique et logique de haut niveau. Ta mission est de garantir la cohérence globale du manuscrit.\n\nCONSIGNES :\n1. Vérifie l'harmonisation terminologique (le même concept est-il nommé de la même façon partout ?).\n2. Détecte les contradictions entre chapitres ou sections.\n3. Assure-toi que les promesses faites en introduction sont tenues en conclusion.\n\nFORMAT :\n### Audit de Cohérence\n- [Problème détecté] : [Localisation/Explication]\n### Respect du Glossaire\n- [Termes non conformes]"
+        - id: user
+          role: user
+          text: "MANUSCRIT :\n{{revised_text}}\n\nCONTEXTE DE RÉFÉRENCE :\n{{reference_context}}"
+        selected: false
+        title: Cohérence Globale
+        type: llm
+        variables: []
+      id: audit_coherence
+      position:
+        x: 560
+        y: 280
+      type: llm
+    - data:
+        outputs:
+        - value_selector:
+          - comparaison_versions
+          - text
+          variable: rapport_comparatif
+        - value_selector:
+          - audit_coherence
+          - text
+          variable: audit_coherence_finale
+        selected: false
+        title: Fin
+        type: end
+      id: "end_node"
+      position:
+        x: 800
+        y: 280
+      type: end

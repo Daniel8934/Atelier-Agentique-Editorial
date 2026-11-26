@@ -1,0 +1,133 @@
+{
+  "name": "Atelier - Ingesteur Audiovisuel (Local)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "=/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data",
+        "events": [
+          "add"
+        ],
+        "options": {
+          "awaitWriteFinish": true,
+          "usePolling": true
+        }
+      },
+      "id": "e3b8a4f1-6d6a-4d9e-9d2a-8c7a1f8b4d9a",
+      "name": "Surveillance Dossier Data",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -i \"{{ $json.path }}\" -ar 16000 -ac 1 -c:a libmp3lame \"{{ $json.path.split('.').slice(0, -1).join('.') }}.mp3\""
+      },
+      "id": "f2a7b5c2-7e7b-5e0f-0e3b-9d8b2f9c5e0b",
+      "name": "Extraction Audio (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/v1/audio/transcriptions",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "large-v3"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1c6a4e0-5c5a-3d8e-8d1a-7b6a0f7b3d8a",
+      "name": "Transcription Whisper Local",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fileContent": "={{ $json.text }}",
+        "fileName": "={{ $node[\"Surveillance Dossier Data\"].json.name.split('.').slice(0, -1).join('.') }}_TRANSCRIPTION.md",
+        "options": {
+          "append": false
+        }
+      },
+      "id": "c0b5a3d9-4b4a-2d7d-7d0a-6a5a9e6a2d7a",
+      "name": "Sauvegarde Markdown",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        760,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Surveillance Dossier Data": {
+      "main": [
+        [
+          {
+            "node": "Extraction Audio (FFmpeg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Audio (FFmpeg)": {
+      "main": [
+        [
+          {
+            "node": "Transcription Whisper Local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcription Whisper Local": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4f9d7c6a-3b2e-1d0c-9a8b-7f6e5d4c3b2a",
+  "id": "1",
+  "meta": {
+    "templateId": null
+  }
+}

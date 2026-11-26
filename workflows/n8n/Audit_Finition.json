@@ -1,0 +1,142 @@
+{
+  "name": "Atelier - Audit de Finition",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Audit de Finition & Traçabilité",
+        "formDescription": "Comparez votre manuscrit rédigé à la source originale pour validation finale.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Fichier Source Brute (.md)",
+              "placeholder": "nom_du_fichier_TRANSCRIPTION.md"
+            },
+            {
+              "fieldLabel": "Votre Manuscrit Rédigé (.md)",
+              "placeholder": "votre_manuscrit_final.md"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1",
+      "name": "Formulaire de Lancement",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data/{{ $json[\"Fichier Source Brute (.md)\"] }}"
+      },
+      "id": "2",
+      "name": "Lecture Source",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [220, -100]
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data/{{ $json[\"Votre Manuscrit Rédigé (.md)\"] }}"
+      },
+      "id": "3",
+      "name": "Lecture Manuscrit",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [220, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost/v1/workflows/run",
+        "authentication": "headerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={ \"source_text\": \"{{ $node[\"Lecture Source\"].json.data }}\", \"revised_text\": \"{{ $node[\"Lecture Manuscrit\"].json.data }}\" }"
+            },
+            {
+              "name": "response_mode",
+              "value": "blocking"
+            },
+            {
+              "name": "user",
+              "value": "daniel-studio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Appel Atelier 4 (Dify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 0],
+      "notes": "Utiliser l'API Key de l'Atelier 4 (Réviseur-Comparateur)"
+    },
+    {
+      "parameters": {
+        "fileContent": "={{ $json.data.outputs.rapport_comparatif }}\n\n---\n\n{{ $json.data.outputs.audit_coherence_finale }}",
+        "fileName": "=/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data/RAPPORT_AUDIT_FINAL.md"
+      },
+      "id": "5",
+      "name": "Sauvegarde Rapport Audit",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Formulaire de Lancement": {
+      "main": [
+        [
+          {
+            "node": "Lecture Source",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lecture Manuscrit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lecture Source": {
+      "main": [
+        [
+          {
+            "node": "Appel Atelier 4 (Dify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lecture Manuscrit": {
+      "main": [
+        [
+          {
+            "node": "Appel Atelier 4 (Dify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel Atelier 4 (Dify)": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Rapport Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
