@@ -51,19 +51,19 @@ workflow:
         type: start
         variables:
         - label: Texte Source (Matière brute)
-          max_length: 200000
+          max_length: 1000000
           options: []
           required: true
           type: paragraph
           variable: source_text
         - label: Manuscrit Révisé (Nouvelle version)
-          max_length: 200000
+          max_length: 1000000
           options: []
           required: true
           type: paragraph
           variable: revised_text
         - label: Glossaire / Plan (Contexte)
-          max_length: 50000
+          max_length: 1000000
           options: []
           required: false
           type: paragraph
