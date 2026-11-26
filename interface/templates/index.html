@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atelier Agentique Éditorial | SaaS Privé</title>
+    <!-- Tailwind CSS pour un design pro et rapide -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg-main: #f8fafc;
+        }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg-main); }
+        .workflow-card:focus-within { ring: 2px solid var(--primary); }
+        /* Accessibilité : Focus visible pour la navigation au clavier */
+        :focus { outline: 3px solid #fbbf24; outline-offset: 2px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Skip Link pour accessibilité -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-yellow-400 p-2 z-50">Aller au contenu principal</a>
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg" aria-hidden="true">
+                <i data-lucide="feather" class="text-white w-6 h-6"></i>
+            </div>
+            <h1 class="text-xl font-bold text-slate-800 tracking-tight">Atelier Agentique Éditorial</h1>
+        </div>
+        <nav aria-label="Navigation principale">
+            <ul class="flex gap-6 text-sm font-medium text-slate-600">
+                <li><a href="#" class="hover:text-blue-600 transition-colors" aria-current="page">Dashboard</a></li>
+                <li><a href="#" class="hover:text-blue-600 transition-colors">Mes Projets</a></li>
+                <li><a href="#" class="hover:text-blue-600 transition-colors">Archives</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="main-content" class="flex-1 container mx-auto px-6 py-8 max-w-6xl">
+        
+        <!-- Welcome Section -->
+        <section class="mb-12">
+            <h2 class="text-3xl font-extrabold text-slate-900 mb-2">Bienvenue dans votre SaaS Privé</h2>
+            <p class="text-slate-600 text-lg">Sélectionnez un atelier pour démarrer votre session de travail.</p>
+        </section>
+
+        <!-- Workflow Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <!-- Atelier 1 -->
+            <article class="workflow-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <i data-lucide="users"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">1. Ingestion & Profilage</h3>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Identification des locuteurs, extraction audio et création automatique du glossaire technique.</p>
+                <button onclick="launchWorkflow('ingestion')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2" aria-label="Lancer l'atelier d'ingestion et profilage">
+                    Lancer l'Atelier <i data-lucide="play" class="w-4 h-4"></i>
+                </button>
+            </article>
+
+            <!-- Atelier 2 & 3 -->
+            <article class="workflow-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                    <i data-lucide="layout"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">2. Architecture Éditoriale</h3>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Analyse des contradictions logiques et génération du plan détaillé avec renvois aux sources.</p>
+                <button onclick="launchWorkflow('studio')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 transition-colors flex items-center justify-center gap-2" aria-label="Lancer l'atelier d'architecture éditoriale">
+                    Lancer l'Atelier <i data-lucide="play" class="w-4 h-4"></i>
+                </button>
+            </article>
+
+            <!-- Atelier 4 -->
+            <article class="workflow-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mb-4 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                    <i data-lucide="shield-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">3. Audit & Finition</h3>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Comparaison factuelle, vérification de la cohérence et rapport final de traçabilité.</p>
+                <button onclick="launchWorkflow('audit')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2" aria-label="Lancer l'atelier d'audit et finition">
+                    Lancer l'Atelier <i data-lucide="play" class="w-4 h-4"></i>
+                </button>
+            </article>
+
+        </div>
+
+        <!-- System Status Footer -->
+        <section class="mt-16 bg-slate-100 rounded-2xl p-8 border border-slate-200" aria-labelledby="status-title">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <h2 id="status-title" class="text-sm font-bold uppercase tracking-widest text-slate-500">État du Système Local</h2>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Whisper GPU</p>
+                    <p class="text-lg font-bold text-slate-700">Prêt (8GB)</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Instance Dify</p>
+                    <p class="text-lg font-bold text-slate-700 font-mono">1.19.0</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Moteur Cloud</p>
+                    <p class="text-lg font-bold text-slate-700">Gemini 1.5</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Stockage</p>
+                    <p class="text-lg font-bold text-slate-700 font-mono">SSD Clients OK</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 p-6 text-center text-slate-500 text-sm">
+        <p>© 2024 Atelier Agentique Éditorial. Conçu pour Ubuntu Server Pro.</p>
+    </footer>
+
+    <!-- Scripts pour l'interactivité -->
+    <script>
+        // Initialisation des icônes
+        lucide.createIcons();
+
+        // Fonction de lancement des workflows (Simulée pour l'instant)
+        function launchWorkflow(type) {
+            alert("Lancement de l'Atelier " + type + " via n8n...\n(Cette action va déclencher le workflow n8n correspondant)");
+            // Note : Dans la version finale, ceci fera un appel API vers vos Webhooks n8n
+        }
+    </script>
+</body>
+</html>
