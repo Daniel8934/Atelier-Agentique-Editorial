@@ -1,0 +1,24 @@
+# Fichiers de données clients (Contenu sensible)
+data/*
+!data/.gitkeep
+
+# Clés API et variables d'environnement
+.env
+.env.*
+secrets.json
+
+# Fichiers temporaires et logs
+*.log
+.DS_Store
+Thumbs.db
+
+# Environnements virtuels Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Fichiers de configuration n8n/Dify locaux contenant des identifiants
+workflows/n8n/*.local.json
+workflows/Dify/*.local.yml
