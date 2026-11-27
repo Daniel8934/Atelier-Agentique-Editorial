@@ -1,0 +1,333 @@
+app:
+  description: Atelier 1 - Identification des intervenants, normalisation et glossaire
+    technique.
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: workflow
+  name: 'Atelier 1 : Profileur & Indexeur'
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/gemini:0.9.16@bf6898c7c0808724ac91f8524795b2e1c64e70520f3ba25260c0b3f185839990
+    version: null
+kind: app
+site:
+  chat_color_theme: null
+  chat_color_theme_inverted: false
+  copyright: null
+  custom_disclaimer: ''
+  default_language: en-US
+  description: null
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  input_placeholder: null
+  privacy_policy: null
+  show_workflow_steps: true
+  title: 'Atelier 1 : Profileur & Indexeur'
+  use_icon_as_answer_icon: false
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - remote_url
+        - local_file
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-profileur
+      source: '1710000000000'
+      sourceHandle: source
+      target: profileur_llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: profileur-code
+      source: profileur_llm
+      sourceHandle: source
+      target: normalizer_code
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: code-glossaire
+      source: normalizer_code
+      sourceHandle: source
+      target: glossaire_llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: glossaire-end
+      source: glossaire_llm
+      sourceHandle: source
+      target: '1710000000002'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Début
+        type: start
+        variables:
+        - label: Texte d'entrée (Transcription/Brut)
+          max_length: 100000
+          options: []
+          required: true
+          type: paragraph
+          variable: input_text
+      height: 109
+      id: '1710000000000'
+      position:
+        x: 52.32236842105266
+        y: 277.62763157894733
+      positionAbsolute:
+        x: 52.32236842105266
+        y: 277.62763157894733
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.2
+          mode: chat
+          name: gemini-3.1-flash-lite
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: system
+          role: system
+          text: 'Tu es un agent expert en analyse de discours et profilage. Ton rôle
+            est d''identifier les intervenants dans une transcription.
+
+
+            CONSIGNES :
+
+            1. Analyse le début de la transcription fournie.
+
+            2. Repère les indices (salutations, présentations, contextes) pour identifier
+            qui se cache derrière SPEAKER_00, SPEAKER_01, etc.
+
+            3. Réponds EXCLUSIVEMENT sous forme d''un objet JSON valide.
+
+
+            FORMAT DE RÉPONSE :
+
+            {"SPEAKER_00": "Nom ou Rôle", "SPEAKER_01": "Nom ou Rôle"}
+
+
+            Si tu ne peux pas identifier un nom, utilise un rôle descriptif (ex: "Intervieweur",
+            "Expert").'
+        - id: user
+          role: user
+          text: 'Voici la transcription (concentre ton analyse sur ses 5000 premiers
+            caractères) :
+
+
+            {{#1710000000000.input_text#}}'
+        selected: false
+        title: Profileur (Stratégie A)
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 88
+      id: profileur_llm
+      position:
+        x: 320.7907894736843
+        y: 280
+      positionAbsolute:
+        x: 320.7907894736843
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\ndef main(input_text: str, speaker_map_str:\
+          \ str):\n    try:\n        # Nettoyage de la chaîne JSON si nécessaire\n\
+          \        map_match = re.search(r'\\{.*\\}', speaker_map_str, re.DOTALL)\n\
+          \        if map_match:\n            mapping = json.loads(map_match.group())\n\
+          \        else:\n            mapping = {}\n    except:\n        mapping =\
+          \ {}\n    \n    normalized_text = input_text\n    for speaker_id, real_name\
+          \ in mapping.items():\n        normalized_text = normalized_text.replace(speaker_id,\
+          \ real_name)\n    \n    return {\n        \"normalized_text\": normalized_text,\n\
+          \        \"mapping\": mapping\n    }\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          mapping:
+            type: object
+          normalized_text:
+            type: string
+        selected: false
+        title: Normalisation du Texte
+        type: code
+        variables:
+        - value_selector:
+          - '1710000000000'
+          - input_text
+          variable: input_text
+        - value_selector:
+          - profileur_llm
+          - text
+          variable: speaker_map_str
+      height: 52
+      id: normalizer_code
+      position:
+        x: 560
+        y: 280
+      positionAbsolute:
+        x: 560
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.3
+          mode: chat
+          name: gemini-3.1-flash-lite
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: system
+          role: system
+          text: 'Tu es un terminologue expert. Ta mission est de créer un glossaire
+            à partir du texte fourni.
+
+
+            CONSIGNES :
+
+            1. Identifie les termes techniques, acronymes ou concepts clés.
+
+            2. Pour chaque terme, propose une définition concise basée sur le contexte
+            du texte.
+
+            3. Présente le résultat sous forme de tableau Markdown : | Terme | Définition
+            contextuelle |.
+
+
+            REMARQUE : Sois sélectif, ne retiens que les termes qui ont une valeur
+            métier ou conceptuelle forte.'
+        - id: user
+          role: user
+          text: 'Voici le texte à analyser :
+
+
+            {{#normalizer_code.normalized_text#}}'
+        selected: true
+        title: Générateur de Glossaire
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 88
+      id: glossaire_llm
+      position:
+        x: 800
+        y: 280
+      positionAbsolute:
+        x: 800
+        y: 280
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - normalizer_code
+          - normalized_text
+          variable: texte_final
+        - value_selector:
+          - normalizer_code
+          - mapping
+          variable: identites_locuteurs
+        - value_selector:
+          - glossaire_llm
+          - text
+          variable: glossaire_markdown
+        selected: false
+        title: Fin
+        type: end
+      height: 140
+      id: '1710000000002'
+      position:
+        x: 1040
+        y: 280
+      positionAbsolute:
+        x: 1040
+        y: 280
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    viewport:
+      x: 120.83527454242926
+      y: -77.59567387687184
+      zoom: 1.264559068219634
+  rag_pipeline_variables: []

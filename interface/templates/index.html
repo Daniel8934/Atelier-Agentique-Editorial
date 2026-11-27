@@ -1,141 +1,53 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atelier Agentique Éditorial | SaaS Privé</title>
-    <!-- Tailwind CSS pour un design pro et rapide -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --bg-main: #f8fafc;
-        }
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: var(--bg-main); }
-        .workflow-card:focus-within { ring: 2px solid var(--primary); }
-        /* Accessibilité : Focus visible pour la navigation au clavier */
-        :focus { outline: 3px solid #fbbf24; outline-offset: 2px; }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col">
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf" content="{{ csrf }}"><title>Atelier Agentique Éditorial</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#17243b;font:16px system-ui,sans-serif}header{background:#fff;border-bottom:1px solid #dce3ed;padding:20px max(24px,calc((100vw - 1120px)/2));display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}header strong{font-size:20px}nav{display:flex;gap:18px;flex-wrap:wrap}a{color:#2056b5}main{max-width:1120px;margin:auto;padding:36px 24px}h1{font-size:32px;margin:8px 0}h2{font-size:22px}p{line-height:1.55;color:#52617a}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:18px}.card{background:white;border:1px solid #dce3ed;border-radius:14px;padding:22px;min-width:0}.tag{color:#2056b5;font-size:13px;font-weight:700;letter-spacing:1px}button,.action{display:inline-block;background:#1d4ed8;color:white;border:0;border-radius:8px;padding:11px 16px;font:inherit;font-weight:600;text-decoration:none;cursor:pointer}button:disabled{background:#68758b;cursor:not-allowed}input{max-width:100%;margin:8px 0 14px}section{margin:36px 0}ul{padding-left:20px;overflow-wrap:anywhere}li{margin:8px 0}small{color:#52617a} :focus-visible{outline:3px solid #ca8a04;outline-offset:3px}.status{font-weight:600}.notice{min-height:26px}footer{padding:24px;text-align:center;color:#52617a;border-top:1px solid #dce3ed}
 
-    <!-- Skip Link pour accessibilité -->
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-yellow-400 p-2 z-50">Aller au contenu principal</a>
-
-    <!-- Header Navigation -->
-    <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg" aria-hidden="true">
-                <i data-lucide="feather" class="text-white w-6 h-6"></i>
-            </div>
-            <h1 class="text-xl font-bold text-slate-800 tracking-tight">Atelier Agentique Éditorial</h1>
-        </div>
-        <nav aria-label="Navigation principale">
-            <ul class="flex gap-6 text-sm font-medium text-slate-600">
-                <li><a href="#" class="hover:text-blue-600 transition-colors" aria-current="page">Dashboard</a></li>
-                <li><a href="#" class="hover:text-blue-600 transition-colors">Mes Projets</a></li>
-                <li><a href="#" class="hover:text-blue-600 transition-colors">Archives</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main id="main-content" class="flex-1 container mx-auto px-6 py-8 max-w-6xl">
-        
-        <!-- Welcome Section -->
-        <section class="mb-12">
-            <h2 class="text-3xl font-extrabold text-slate-900 mb-2">Bienvenue dans votre SaaS Privé</h2>
-            <p class="text-slate-600 text-lg">Sélectionnez un atelier pour démarrer votre session de travail.</p>
-        </section>
-
-        <!-- Workflow Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            <!-- Atelier 1 -->
-            <article class="workflow-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <i data-lucide="users"></i>
-                </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">1. Ingestion & Profilage</h3>
-                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Identification des locuteurs, extraction audio et création automatique du glossaire technique.</p>
-                <button onclick="launchWorkflow('ingestion')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors flex items-center justify-center gap-2" aria-label="Lancer l'atelier d'ingestion et profilage">
-                    Lancer l'Atelier <i data-lucide="play" class="w-4 h-4"></i>
-                </button>
-            </article>
-
-            <!-- Atelier 2 & 3 -->
-            <article class="workflow-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                    <i data-lucide="layout"></i>
-                </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">2. Architecture Éditoriale</h3>
-                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Analyse des contradictions logiques et génération du plan détaillé avec renvois aux sources.</p>
-                <button onclick="launchWorkflow('studio')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 transition-colors flex items-center justify-center gap-2" aria-label="Lancer l'atelier d'architecture éditoriale">
-                    Lancer l'Atelier <i data-lucide="play" class="w-4 h-4"></i>
-                </button>
-            </article>
-
-            <!-- Atelier 4 -->
-            <article class="workflow-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mb-4 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                    <i data-lucide="shield-check"></i>
-                </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">3. Audit & Finition</h3>
-                <p class="text-slate-500 text-sm mb-6 leading-relaxed">Comparaison factuelle, vérification de la cohérence et rapport final de traçabilité.</p>
-                <button onclick="launchWorkflow('audit')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2" aria-label="Lancer l'atelier d'audit et finition">
-                    Lancer l'Atelier <i data-lucide="play" class="w-4 h-4"></i>
-                </button>
-            </article>
-
-        </div>
-
-        <!-- System Status Footer -->
-        <section class="mt-16 bg-slate-100 rounded-2xl p-8 border border-slate-200" aria-labelledby="status-title">
-            <div class="flex items-center gap-2 mb-6">
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                </span>
-                <h2 id="status-title" class="text-sm font-bold uppercase tracking-widest text-slate-500">État du Système Local</h2>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Whisper GPU</p>
-                    <p class="text-lg font-bold text-slate-700">Prêt (8GB)</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Instance Dify</p>
-                    <p class="text-lg font-bold text-slate-700 font-mono">1.19.0</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Moteur Cloud</p>
-                    <p class="text-lg font-bold text-slate-700">Gemini 1.5</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Stockage</p>
-                    <p class="text-lg font-bold text-slate-700 font-mono">SSD Clients OK</p>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-white border-t border-slate-200 p-6 text-center text-slate-500 text-sm">
-        <p>© 2024 Atelier Agentique Éditorial. Conçu pour Ubuntu Server Pro.</p>
-    </footer>
-
-    <!-- Scripts pour l'interactivité -->
-    <script>
-        // Initialisation des icônes
-        lucide.createIcons();
-
-        // Fonction de lancement des workflows (Simulée pour l'instant)
-        function launchWorkflow(type) {
-            alert("Lancement de l'Atelier " + type + " via n8n...\n(Cette action va déclencher le workflow n8n correspondant)");
-            // Note : Dans la version finale, ceci fera un appel API vers vos Webhooks n8n
-        }
-    </script>
-</body>
-</html>
+section[aria-label="Ateliers"] .action,
+section[aria-label="Ateliers"] button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 16px;
+    padding: 14px 12px;
+    min-height: 48px;
+}
+section[aria-label="Ateliers"] article:nth-child(2) .action {
+    background: #7c3aed;
+}
+section[aria-label="Ateliers"] article:nth-child(3) .action {
+    background: #047857;
+}
+#media {
+    display: block;
+    width: 100%;
+    border: 2px dashed #94a3b8;
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+}
+</style></head><body><header><strong>Atelier Agentique Éditorial</strong><nav aria-label="Navigation"><a href="#dashboard">Tableau de bord</a><a href="#projects">Mes projets</a><a href="#archives">Archives</a></nav></header><main id="dashboard"><div class="tag">ESPACE DE TRAVAIL PRIVÉ · LOCAL</div><h1>Votre studio éditorial</h1><p>De la matière première au manuscrit audité. Traitement linguistique configuré dans Dify : Gemini 3.1 Flash-Lite.</p><section class="grid" aria-label="Ateliers"><article class="card"><div class="tag">01 / INGESTION</div><h2>Ingestion documentaire et audiovisuelle</h2><p>Sélectionnez un PDF, un fichier audio ou une vidéo. Le fichier sera déposé dans le dossier surveillé par n8n.</p><form id="ingestion"><label for="media">Fichier source</label><input id="media" name="file" type="file" required accept=".pdf,.mp3,.wav,.m4a,.aac,.flac,.ogg,.opus,.wma,.mp4,.mkv,.mov,.webm,.avi,.m4v"><button type="submit">Lancer l’ingestion</button></form><p id="ingestion-msg" class="notice" role="status"></p></article><article class="card"><div class="tag">02 / ATELIERS DIFY 1–3</div><h2>Studio éditorial</h2><p>Profilage, validation des intervenants, analyse dialectique et plan éditorial.</p>{% if studio %}<a class="action" href="{{ studio }}" target="_blank" rel="noopener noreferrer">Lancer le mandat éditorial</a>{% else %}
+    <button disabled>Lancer le mandat éditorial</button>
+    <p>Formulaire de production non configuré.</p>
+    {% endif %}</article><article class="card"><div class="tag">03 / ATELIER DIFY 4</div><h2>Audit de finition</h2><p>Comparez le manuscrit à la source et au dossier de travail validé.</p>{% if audit %}<a class="action" href="{{ audit }}" target="_blank" rel="noopener noreferrer">Lancer l’audit de finition</a>{% else %}
+    <button disabled>Lancer l’audit de finition</button>
+    <p>Formulaire de production non configuré.</p>
+    {% endif %}</article></section><section id="projects"><h2>Mes projets</h2><button id="refresh">Actualiser les fichiers</button><p id="files-msg" role="status"></p><div class="grid"><article class="card"><h3>Transcriptions</h3><ul id="transcriptions"></ul></article><article class="card"><h3>Dossiers de travail</h3><ul id="mandats"></ul></article><article class="card"><h3>Manuscrits</h3><form id="manuscript"><label for="md">Déposer un manuscrit Markdown</label><input id="md" name="file" type="file" accept=".md" required><button>Déposer</button></form><p id="manuscript-msg" role="status"></p><ul id="manuscrits"></ul></article></div></section><section id="archives"><h2>Rapports et archives</h2><div class="grid"><article class="card"><h3>Audits</h3><ul id="audits"></ul></article><article class="card"><h3>Archives Markdown</h3><ul id="archives-list"></ul></article></div></section><section><h2>État du système local</h2><button id="check">Vérifier les services</button><p><small>Accessibilité HTTP uniquement : ne garantit ni le GPU ni la disponibilité du modèle Gemini.</small></p><div class="grid" id="status" aria-live="polite">
+<div class="card">
+<small>Instance Dify</small>
+<p class="status">1.20.0</p>
+</div>
+<div class="card">
+<small>Moteur Cloud</small>
+<p class="status">Gemini 3.1 Flash-Lite</p>
+</div>
+<div class="card">
+<small>Services locaux</small>
+<p class="status">En attente de vérification</p>
+</div>
+</div></section></main><footer>Atelier Agentique Éditorial · n8n / Dify / Whisper</footer><script>
+const $=id=>document.getElementById(id);const csrf=document.querySelector('meta[name="csrf"]').content;
+async function upload(form,kind){const msg=$(form.id+'-msg'),button=form.querySelector('button');button.disabled=true;msg.textContent='Dépôt en cours…';try{const r=await fetch('/api/upload/'+kind,{method:'POST',headers:{'X-CSRF-Token':csrf},body:new FormData(form)});const data=await r.json();if(!r.ok)throw Error(data.error||'Échec du dépôt');msg.textContent=data.message;form.reset();refresh()}catch(e){msg.textContent='Erreur : '+e.message}finally{button.disabled=false}}
+$('ingestion').addEventListener('submit',e=>{e.preventDefault();upload(e.target,'inbox')});$('manuscript').addEventListener('submit',e=>{e.preventDefault();upload(e.target,'manuscrits')});
+async function refresh(){try{const r=await fetch('/api/files');if(!r.ok)throw Error('Lecture impossible');const data=await r.json();for(const [key,files] of Object.entries(data)){const list=$(key==='archives'?'archives-list':key);list.replaceChildren();if(!files.length){const li=document.createElement('li');li.textContent='Aucun fichier';list.append(li)}for(const file of files){const li=document.createElement('li'),a=document.createElement('a');a.href='/files/'+key+'/'+encodeURIComponent(file.name);a.textContent=file.name;li.append(a);list.append(li)}}$('files-msg').textContent='Liste actualisée.'}catch(e){$('files-msg').textContent=e.message}}
+async function status(){const box=$('status');try{const r=await fetch('/api/status');if(!r.ok)throw Error();const data=await r.json();box.replaceChildren();for(const [name,value] of Object.entries(data)){const card=document.createElement('div');card.className='card';const label=document.createElement('small'),state=document.createElement('p');label.textContent=name;state.className='status';state.textContent=value;card.append(label,state);box.append(card)}}catch(e){console.warn('Vérification des services impossible', e)}}
+$('refresh').addEventListener('click',refresh);$('check').addEventListener('click',status);refresh();status();
+</script></body></html>

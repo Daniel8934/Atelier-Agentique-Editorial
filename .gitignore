@@ -22,3 +22,48 @@ __pycache__/
 # Fichiers de configuration n8n/Dify locaux contenant des identifiants
 workflows/n8n/*.local.json
 workflows/Dify/*.local.yml
+
+# Protection des sauvegardes locales
+sauvegardes/
+backups/
+*.bak
+*.bak.*
+*.backup
+*.old
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Protection des identifiants confidentiels
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+credentials*.json
+secrets/
+.envrc
+
+# Configurations locales supplémentaires
+*.local.yaml
+*.local.yml
+*.local.json
+
+# Bases de données locales
+*.sqlite
+*.sqlite3
+*.db
+
+# Modèles IA volumineux
+models/
+*.gguf
+*.safetensors
+*.pt
+*.onnx
+
+# Fichiers temporaires et caches
+tmp/
+temp/
+.cache/
+.pytest_cache/

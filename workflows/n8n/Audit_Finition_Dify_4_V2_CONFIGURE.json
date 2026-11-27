@@ -1,0 +1,365 @@
+{
+  "name": "Atelier - Audit de Finition",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Audit de Finition & Traçabilité",
+        "formDescription": "Saisir les noms des fichiers dans 03_transcriptions, 05_manuscrits et 04_mandats. Le dossier de travail est requis pour vérifier le contexte éditorial.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Fichier Source Brute (.md)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Votre Manuscrit Rédigé (.md)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Dossier de travail (.md)",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c37b06c7-8b9a-42e9-9a31-ab6c9c3fe577",
+      "name": "Formulaire de Lancement",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "f98cebec-5cc1-402b-8ebd-e3c5a3778412"
+    },
+    {
+      "parameters": {
+        "jsCode": "const f=$input.first().json;\nfunction name(key){const s=String(f[key]??'').trim();if(!/^[\\p{L}\\p{N}_ .()-]+\\.md$/iu.test(s)||s.startsWith('.')||s.includes('..')||s.length>240)throw new Error('Nom Markdown invalide : '+key);return s;}\nconst base='/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data';\nconst source=name('Fichier Source Brute (.md)'), manuscript=name('Votre Manuscrit Rédigé (.md)'), context=name('Dossier de travail (.md)');\nconst id=String($execution.id);if(!/^[A-Za-z0-9_-]+$/.test(id))throw new Error('Identifiant invalide');\nreturn [{json:{source,manuscript,context,sourcePath:base+'/03_transcriptions/'+source,manuscriptPath:base+'/05_manuscrits/'+manuscript,contextPath:base+'/04_mandats/'+context,output:base+'/06_audits/RAPPORT_AUDIT_'+id+'.md',id}}];"
+      },
+      "id": "b1e9b507-b185-453e-8005-a1177b759c91",
+      "name": "Valider fichiers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Valider fichiers').first().json.sourcePath }}",
+        "options": {}
+      },
+      "id": "41817742-6bb6-4c05-9c4e-f097667a1816",
+      "name": "Lecture Source",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if($input.all().length!==1)throw new Error('Un seul fichier attendu');\nconst b=await this.helpers.getBinaryDataBuffer(0,'data');\nconst text=b.toString('utf8').replace(/^\\uFEFF/,'');\nif(!text.trim()||text.includes('\\uFFFD')||text.includes('\\u0000'))throw new Error('Fichier vide ou texte UTF-8 invalide');\nif(text.length>1000000)throw new Error('Fichier trop long pour le contrat Dify');\nreturn [{json:{source_text:text}}];"
+      },
+      "id": "aece9a5f-3679-41fb-806e-f7896141ef0e",
+      "name": "Décoder Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Valider fichiers').first().json.manuscriptPath }}",
+        "options": {}
+      },
+      "id": "0dc26f63-923c-488b-928f-bdeb31adc437",
+      "name": "Lecture Manuscrit",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if($input.all().length!==1)throw new Error('Un seul fichier attendu');\nconst b=await this.helpers.getBinaryDataBuffer(0,'data');\nconst text=b.toString('utf8').replace(/^\\uFEFF/,'');\nif(!text.trim()||text.includes('\\uFFFD')||text.includes('\\u0000'))throw new Error('Fichier vide ou texte UTF-8 invalide');\nif(text.length>1000000)throw new Error('Fichier trop long pour le contrat Dify');\nreturn [{json:{revised_text:text}}];"
+      },
+      "id": "4c4062c1-bc79-404f-bdab-d7ea6e5c4160",
+      "name": "Décoder Manuscrit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Valider fichiers').first().json.contextPath }}",
+        "options": {}
+      },
+      "id": "34d30311-df40-4282-976c-08f4dad4219e",
+      "name": "Lecture Contexte",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if($input.all().length!==1)throw new Error('Un seul fichier attendu');\nconst b=await this.helpers.getBinaryDataBuffer(0,'data');\nconst text=b.toString('utf8').replace(/^\\uFEFF/,'');\nif(!text.trim()||text.includes('\\uFFFD')||text.includes('\\u0000'))throw new Error('Fichier vide ou texte UTF-8 invalide');\nif(text.length>1000000)throw new Error('Fichier trop long pour le contrat Dify');\nreturn [{json:{reference_context:text}}];"
+      },
+      "id": "7b77cb0a-ab69-49ab-af96-0d5f6b820282",
+      "name": "Décoder Contexte",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const f=$('Valider fichiers').first().json;\nconst source_text=$('Décoder Source').first().json.source_text;\nconst revised_text=$('Décoder Manuscrit').first().json.revised_text;\nlet reference_context=$('Décoder Contexte').first().json.reference_context;\n// Format exporté par Studio Editorial : retirer uniquement la transcription redondante en fin de dossier.\nconst marker='\\n\\n## Transcription normalisée\\n\\n';const idx=reference_context.lastIndexOf(marker);\nif(idx>=0)reference_context=reference_context.slice(0,idx);\nconst match=reference_context.match(/^Source : (.+)$/m);\nif(match&&match[1].trim()!==f.source)throw new Error('Le dossier de travail ne correspond pas à la source sélectionnée');\nreturn [{json:{source_text,revised_text,reference_context}}];"
+      },
+      "id": "914c5a4b-0925-4c83-bc7e-e467d77388e7",
+      "name": "Préparer audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://docker-nginx-1/v1/workflows/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({inputs:$json,response_mode:\"blocking\",user:\"daniel-studio\"}) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "e5c0b7b7-6e61-4004-aa69-143173a310f6",
+      "name": "Appel Atelier 4 (Dify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8TaPnDX7UjMKTHsu",
+          "name": "Dify - Atelier 4"
+        }
+      },
+      "notes": "Associer le credential Header Auth Dify_Atelier_4 (Authorization: Bearer app-...)."
+    },
+    {
+      "parameters": {
+        "jsCode": "const response=$input.first().json;\nconst d=response.data;\nif(d?.status!=='succeeded')throw new Error('Atelier 4 : '+(d?.error||'exécution non réussie'));\nconst o=d.outputs;\nfor(const k of ['rapport_comparatif','audit_coherence_finale'])if(typeof o?.[k]!=='string'||!o[k].trim())throw new Error('Sortie Dify absente : '+k);\nconst f=$('Valider fichiers').first().json;\nconst markdown=['# Rapport d’audit de finition','Audit : '+f.id,'Date : '+new Date().toISOString(),'Source : '+f.source,'Manuscrit : '+f.manuscript,'Dossier de travail : '+f.context,'Exécution Dify : '+(response.workflow_run_id||d.id||'non renseignée'),'## Rapport comparatif',o.rapport_comparatif,'---','## Audit de cohérence finale',o.audit_coherence_finale].join('\\n\\n');\nconst data=await this.helpers.prepareBinaryData(Buffer.from(markdown,'utf8'),f.output.split('/').pop(),'text/markdown');\nreturn [{json:{output:f.output},binary:{data}}];"
+      },
+      "id": "7d8f00bc-9c8c-497d-afba-3cdb9ac4ec3b",
+      "name": "Contrôler et assembler rapport",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Contrôler et assembler rapport').first().json.output }}",
+        "options": {}
+      },
+      "id": "7d4c940d-a523-4473-b04f-cda3e754a9ea",
+      "name": "Sauvegarde Rapport Audit",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Rapport enregistré",
+        "completionMessage": "={{ 'Fichier : '+$('Contrôler et assembler rapport').first().json.output }}",
+        "options": {}
+      },
+      "id": "86632a70-5dda-4056-924b-5125da39405c",
+      "name": "Confirmation",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        2880,
+        0
+      ],
+      "webhookId": "2de4339d-5fd0-4527-86be-55a58d1fe7f3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Formulaire de Lancement": {
+      "main": [
+        [
+          {
+            "node": "Valider fichiers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valider fichiers": {
+      "main": [
+        [
+          {
+            "node": "Lecture Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lecture Source": {
+      "main": [
+        [
+          {
+            "node": "Décoder Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Décoder Source": {
+      "main": [
+        [
+          {
+            "node": "Lecture Manuscrit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lecture Manuscrit": {
+      "main": [
+        [
+          {
+            "node": "Décoder Manuscrit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Décoder Manuscrit": {
+      "main": [
+        [
+          {
+            "node": "Lecture Contexte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lecture Contexte": {
+      "main": [
+        [
+          {
+            "node": "Décoder Contexte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Décoder Contexte": {
+      "main": [
+        [
+          {
+            "node": "Préparer audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer audit": {
+      "main": [
+        [
+          {
+            "node": "Appel Atelier 4 (Dify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel Atelier 4 (Dify)": {
+      "main": [
+        [
+          {
+            "node": "Contrôler et assembler rapport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrôler et assembler rapport": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Rapport Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sauvegarde Rapport Audit": {
+      "main": [
+        [
+          {
+            "node": "Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "450e34e7-a485-4a7e-992f-39a41efa2fc7",
+  "meta": {
+    "instanceId": "3bb3d5dba388258adfcf67fc68d50872757074e4bb9ad63ae0302d9252763004"
+  },
+  "nodeGroups": [],
+  "id": "6xetdK3V30NHg8tL",
+  "tags": []
+}

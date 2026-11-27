@@ -1,0 +1,353 @@
+{
+  "name": "Atelier - Ingesteur Audiovisuel & PDF (Local)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "folder",
+        "path": "/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data/01_inbox",
+        "events": [
+          "add"
+        ],
+        "options": {
+          "awaitWriteFinish": true,
+          "followSymlinks": false,
+          "ignoreInitial": true,
+          "depth": 0,
+          "usePolling": true
+        }
+      },
+      "id": "77afcb47-b88b-4df2-8888-e4022d4d90f4",
+      "name": "Surveillance Inbox",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst root = \"/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data\";\nconst inbox = root + \"/01_inbox/\";\nconst items = $input.all();\nconst result = [];\n\nif (items.length === 0) {\n  throw new Error(\"Aucune donnée reçue du déclencheur.\");\n}\n\nfor (const [index, item] of items.entries()) {\n  const event = item.json.event;\n  const path = item.json.path;\n\n  if (event !== \"add\") {\n    throw new Error(\n      \"Événement inattendu : \" + String(event)\n    );\n  }\n\n  if (typeof path !== \"string\") {\n    throw new Error(\"Chemin du fichier absent ou invalide.\");\n  }\n\n  if (!path.startsWith(inbox)) {\n    throw new Error(\"Fichier hors du dossier surveillé : \" + path);\n  }\n\n  const name = path.slice(inbox.length);\n\n  const allowed =\n    /^[\\p{L}\\p{N}_ .()-]+\\.(pdf|mp3|wav|m4a|aac|flac|ogg|opus|wma|mp4|mkv|mov|webm|avi|m4v)$/iu;\n\n  if (\n    !allowed.test(name) ||\n    name.startsWith(\".\") ||\n    name.includes(\"..\")\n  ) {\n    throw new Error(\"Nom ou extension non autorisés : \" + name);\n  }\n\n  const ext = name.split(\".\").pop().toLowerCase();\n  const stem = name.slice(0, name.lastIndexOf(\".\"));\n\n  const executionId = String($execution.id || \"\")\n    .replace(/[^a-zA-Z0-9_-]/g, \"\");\n\n  if (!executionId) {\n    throw new Error(\"Identifiant d'exécution absent.\");\n  }\n\n  const job = executionId + \"_\" + index;\n\n  result.push({\n    json: {\n      path,\n      name,\n      ext,\n      stem,\n      job,\n      audioPath: root + \"/02_temp/\" + job + \".wav\",\n      outputPath: root + \"/03_transcriptions/\" +\n        stem + \"_\" + ext + \"_\" + job + \"_TRANSCRIPTION.md\"\n    },\n    pairedItem: { item: index }\n  });\n}\n\nreturn result;\n"
+      },
+      "id": "115645f5-b756-4834-953e-02fa7fa07fed",
+      "name": "Valider fichier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ext === \"pdf\" }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "4b55f37d-b215-467a-a87f-e8a318a64c28",
+      "name": "Est-ce un PDF ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        448,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.path }}",
+        "options": {}
+      },
+      "id": "dd4145ef-684f-4b78-a44f-6eddae198526",
+      "name": "Lire PDF",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        656,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "8989e70a-40b5-4e52-916c-ffe2e151daa7",
+      "name": "Extraire texte PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ 'ffmpeg -nostdin -hide_banner -loglevel error -n -i \"' + $json.path + '\" -vn -ar 16000 -ac 1 -c:a pcm_s16le \"' + $json.audioPath + '\"' }}"
+      },
+      "id": "dcfe1223-f4b0-488a-b8d9-c5e6bb682b8e",
+      "name": "Extraction Audio (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        656,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Valider fichier').first().json.audioPath }}",
+        "options": {}
+      },
+      "id": "af5902aa-7127-4954-9110-0fcdd456f4a7",
+      "name": "Lire audio WAV",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://atelier-whisper:8000/v1/audio/transcriptions",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "large-v3"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 900000
+        }
+      },
+      "id": "05611681-bfaf-40fd-96fa-0002060cb4f0",
+      "name": "Transcription Whisper Local",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1104,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const meta = $('Valider fichier').first().json;\nconst raw = $input.first().json.text;\nif (typeof raw !== 'string' || !raw.trim()) throw new Error(meta.ext === 'pdf' ? 'PDF sans texte exploitable : OCR requis ou extraction échouée.' : 'Whisper : transcription vide ou réponse incompatible.');\nconst kind = meta.ext === 'pdf' ? 'Extraction PDF' : 'Transcription audio';\nconst markdown = '# '+kind+'\\n\\nSource : '+meta.name+'\\n\\n'+raw.trim()+'\\n';\nreturn [{json:{...meta,markdown},binary:{data:{data:Buffer.from(markdown,'utf8').toString('base64'),mimeType:'text/markdown',fileName:meta.outputPath.split('/').pop()}}}];"
+      },
+      "id": "47def2b1-b843-4b9a-b5f8-91e7d71634de",
+      "name": "Préparer Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.outputPath }}",
+        "options": {}
+      },
+      "id": "c9352f85-1c98-469e-9142-324788416d07",
+      "name": "Sauvegarde Markdown",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('Valider fichier').first().json.ext !== 'pdf' }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "2191fb35-dd2d-4857-9723-66af6b0b8085",
+      "name": "Audio temporaire ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ 'rm -f -- \"' + $('Valider fichier').first().json.audioPath + '\"' }}"
+      },
+      "id": "5e52a8a3-655d-4a2b-b60d-aa2e04c1ba24",
+      "name": "Nettoyer WAV",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        80
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Valider fichier": {
+      "main": [
+        [
+          {
+            "node": "Est-ce un PDF ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Est-ce un PDF ?": {
+      "main": [
+        [
+          {
+            "node": "Lire PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extraction Audio (FFmpeg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire PDF": {
+      "main": [
+        [
+          {
+            "node": "Extraire texte PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire texte PDF": {
+      "main": [
+        [
+          {
+            "node": "Préparer Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire audio WAV": {
+      "main": [
+        [
+          {
+            "node": "Transcription Whisper Local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcription Whisper Local": {
+      "main": [
+        [
+          {
+            "node": "Préparer Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer Markdown": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sauvegarde Markdown": {
+      "main": [
+        [
+          {
+            "node": "Audio temporaire ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Surveillance Inbox": {
+      "main": [
+        [
+          {
+            "node": "Valider fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Audio (FFmpeg)": {
+      "main": [
+        [
+          {
+            "node": "Lire audio WAV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio temporaire ?": {
+      "main": [
+        [
+          {
+            "node": "Nettoyer WAV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "beb75e66-90cd-4132-a3f8-8a0d44f019cd",
+  "meta": {
+    "instanceId": "3bb3d5dba388258adfcf67fc68d50872757074e4bb9ad63ae0302d9252763004"
+  },
+  "nodeGroups": [],
+  "id": "g3yQF2Phv4AfmKge",
+  "tags": []
+}

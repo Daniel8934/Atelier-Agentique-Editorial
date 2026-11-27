@@ -1,0 +1,28 @@
+services:
+  whisper:
+    build: .
+    container_name: atelier-whisper
+    restart: unless-stopped
+    gpus: all
+
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    environment:
+      WHISPER_MODEL: large-v3
+      WHISPER_DEVICE: cuda
+      WHISPER_COMPUTE_TYPE: int8_float32
+
+    volumes:
+      - whisper-models:/models
+
+    networks:
+      - n8n_network
+
+volumes:
+  whisper-models:
+
+networks:
+  n8n_network:
+    external: true
+    name: n8n_default

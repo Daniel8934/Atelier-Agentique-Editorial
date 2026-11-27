@@ -1,0 +1,471 @@
+{
+  "name": "Atelier - Studio Éditorial (Orchestrateur)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Lancement du Mandat Éditorial",
+        "formDescription": "Saisir le nom du fichier Markdown dans 03_transcriptions.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nom du fichier transcription (.md)",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Déclencheur Manuel",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "id": "7d36759d-0fa8-4eda-83c9-97d9a04844c0",
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "d4e57deb-bdb4-40f9-8aa5-75107d5448a0"
+    },
+    {
+      "parameters": {
+        "jsCode": "const filename = String($input.first().json['Nom du fichier transcription (.md)'] ?? '').trim();\nif (!/^[\\p{L}\\p{N}_ .()-]+\\.md$/iu.test(filename) || filename.startsWith('.') || filename.includes('..') || filename.length > 240) throw new Error('Nom Markdown invalide');\nconst base = \"/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data\";\nreturn [{json:{filename,path:base+'/03_transcriptions/'+filename,output:base+'/04_mandats/DOSSIER_TRAVAIL_'+$execution.id+'.md',mandat_id:String($execution.id)}}];"
+      },
+      "name": "Valider fichier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "4af7db3b-5a44-4e4f-bb8e-c6824dd11974",
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.path }}",
+        "options": {}
+      },
+      "name": "Lecture Fichier",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "id": "1c416aa9-b65c-4207-afc0-e380f4e86bdf",
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = await this.helpers.getBinaryDataBuffer(0,'data');\nconst input_text = b.toString('utf8').replace(/^\\uFEFF/,'');\nif (!input_text.trim() || input_text.includes('\\uFFFD')) throw new Error('Transcription vide ou UTF-8 invalide');\nif (input_text.length > 1000000) throw new Error('Transcription trop longue pour le contrat Dify');\nreturn [{json:{...$('Valider fichier').first().json,input_text}}];"
+      },
+      "name": "Décoder transcription",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "ae88ba25-9211-45b3-bbfa-14c1f28c8123",
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://docker-nginx-1/v1/workflows/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({inputs:{input_text:$json.input_text},response_mode:\"blocking\",user:\"daniel-studio\"}) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "name": "Appel Atelier 1 (Dify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "f71fb6c0-7475-4e3d-a0fe-26cebaf08fab",
+      "position": [
+        960,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cf9NGtX2NW7NTs0G",
+          "name": "Dify - Atelier 1"
+        }
+      },
+      "notes": "Associer le credential Header Auth Dify_Atelier_1 (Authorization: Bearer <clé API>)."
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$input.first().json.data;\nif(d?.status !== 'succeeded') throw new Error('Atelier 1: '+(d?.error || 'exécution non réussie'));\nconst o=d.outputs;\nif(!o || typeof o.texte_final !== 'string' || typeof o.glossaire_markdown !== 'string' || !o.identites_locuteurs || typeof o.identites_locuteurs !== 'object' || Array.isArray(o.identites_locuteurs)) throw new Error('Contrat Atelier 1 invalide');\nreturn [{json:o}];"
+      },
+      "name": "Contrôler Atelier 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "e01eeb9d-ee58-4ee6-944d-755487be0598",
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify([{fieldLabel:\"Mapping des locuteurs\",fieldType:\"textarea\",requiredField:true,defaultValue:JSON.stringify($json.identites_locuteurs,null,2)}]) }}",
+        "options": {
+          "formTitle": "Validation des Intervenants",
+          "formDescription": "Corriger le mapping JSON puis valider. Utiliser {} en absence de diarisation."
+        }
+      },
+      "name": "Validation Humaine (Noms)",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "id": "ee98ee0e-edfa-4e57-ac1a-656aad74d786",
+      "position": [
+        1440,
+        0
+      ],
+      "webhookId": "9566f514-ff59-440e-9bb6-1318ad47cca7"
+    },
+    {
+      "parameters": {
+        "jsCode": "let mapping;\ntry {mapping=JSON.parse($input.first().json['Mapping des locuteurs']);} catch {throw new Error('Mapping JSON invalide');}\nif(!mapping || typeof mapping !== 'object' || Array.isArray(mapping)) throw new Error('Mapping: objet attendu');\nconst source=$('Décoder transcription').first().json;\nconst ids=new Set(source.input_text.match(/\\bSPEAKER_\\d+\\b/g)||[]);\nfor(const [k,v] of Object.entries(mapping)) if(!ids.has(k)||typeof v!=='string'||!v.trim()||/[\\r\\n]/.test(v)) throw new Error('Mapping invalide: '+k);\nconst texte_final=source.input_text.replace(/\\bSPEAKER_\\d+\\b/g,k=>Object.hasOwn(mapping,k)?mapping[k].trim():k);\nreturn [{json:{...source,texte_final,mapping,glossaire_markdown:$('Contrôler Atelier 1').first().json.glossaire_markdown}}];"
+      },
+      "name": "Appliquer mapping validé",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "4c130547-e22f-48cb-b7b3-bc839b79dae3",
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://docker-nginx-1/v1/workflows/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({inputs:{input_text:$json.texte_final},response_mode:\"blocking\",user:\"daniel-studio\"}) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "name": "Appel Atelier 2 (Dify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "b13e8576-152f-492b-8a48-323f5103761f",
+      "position": [
+        1920,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "V3wkO6NWQFymWdkN",
+          "name": "Dify - Atelier 2"
+        }
+      },
+      "notes": "Associer le credential Header Auth Dify_Atelier_2 (Authorization: Bearer <clé API>)."
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$input.first().json.data;\nif(d?.status !== 'succeeded') throw new Error('Atelier 2: '+(d?.error || 'exécution non réussie'));\nif(typeof d.outputs?.audit_logique !== 'string' || !d.outputs.audit_logique.trim()) throw new Error('Sortie audit_logique absente (vérifier DSL Atelier 2)');\nreturn [{json:{audit_logique:d.outputs.audit_logique}}];"
+      },
+      "name": "Contrôler Atelier 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "cf5be8ca-7a9d-4fbb-af00-cbf25595568e",
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://docker-nginx-1/v1/workflows/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({inputs:{input_text:$('Appliquer mapping validé').first().json.texte_final,glossaire_markdown:$('Appliquer mapping validé').first().json.glossaire_markdown,audit_logique:$json.audit_logique},response_mode:\"blocking\",user:\"daniel-studio\"}) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "name": "Appel Atelier 3 (Dify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "id": "b67473e3-2e34-4664-ac35-22d8cb9f9521",
+      "position": [
+        2400,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MExqau3ONf9ETgNs",
+          "name": "Dify - Atelier 3"
+        }
+      },
+      "notes": "Associer le credential Header Auth Dify_Atelier_3 (Authorization: Bearer <clé API>). Contrat provisoire: input_text, glossaire_markdown, audit_logique -> plan_final. Adapter au DSL définitif."
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$input.first().json.data;\nif(d?.status !== 'succeeded') throw new Error('Atelier 3: '+(d?.error || 'exécution non réussie'));\nif(typeof d.outputs?.plan_final !== 'string' || !d.outputs.plan_final.trim()) throw new Error('Sortie plan_final absente (vérifier DSL Atelier 3)');\nreturn [{json:{plan_final:d.outputs.plan_final,audit_logique:$('Contrôler Atelier 2').first().json.audit_logique}}];"
+      },
+      "name": "Contrôler Atelier 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "19af36d5-4083-4cb0-a5da-c4e8b7e59cfc",
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "defineForm": "json",
+        "jsonOutput": "={{ JSON.stringify([{fieldLabel:\"Plan D\\u00e9taill\\u00e9\",fieldType:\"textarea\",requiredField:true,defaultValue:$json.plan_final},{fieldLabel:\"Audit Logique\",fieldType:\"textarea\",requiredField:true,defaultValue:$json.audit_logique}]) }}",
+        "options": {
+          "formTitle": "Révision du Plan & Audit",
+          "formDescription": "Corriger le plan et l’audit avant export."
+        }
+      },
+      "name": "Validation Humaine (Plan)",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "id": "f6116395-fe87-405b-b4db-1c6b5f6bcbb6",
+      "position": [
+        2880,
+        0
+      ],
+      "webhookId": "eb9da4ed-1deb-4109-bde1-82a57bfcb3c8"
+    },
+    {
+      "parameters": {
+        "jsCode": "const v=$input.first().json;\nconst s=$('Appliquer mapping validé').first().json;\nconst plan=v['Plan Détaillé'], audit=v['Audit Logique'];\nif(typeof plan!=='string'||!plan.trim()||typeof audit!=='string'||!audit.trim()) throw new Error('Plan ou audit vide');\nconst markdown=['# Dossier de travail éditorial','Mandat : '+s.mandat_id,'Source : '+s.filename,'Date : '+new Date().toISOString(),'## Plan détaillé validé',plan,'## Audit logique validé',audit,'## Glossaire (Atelier 1, avant validation des noms)',s.glossaire_markdown,'## Mapping validé','```json\\n'+JSON.stringify(s.mapping,null,2)+'\\n```','## Transcription normalisée',s.texte_final].join('\\n\\n');\nconst data=await this.helpers.prepareBinaryData(Buffer.from(markdown,'utf8'),s.output.split('/').pop(),'text/markdown');\nreturn [{json:{output:s.output,mandat_id:s.mandat_id},binary:{data}}];"
+      },
+      "name": "Assembler dossier de travail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "id": "919bed7e-6c13-4ac1-acfb-099d2a688328",
+      "position": [
+        3120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Assembler dossier de travail').first().json.output }}",
+        "options": {}
+      },
+      "name": "Export Dossier Travail",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "id": "931d651d-e6eb-4271-983f-858592aa7f98",
+      "position": [
+        3360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Dossier enregistré",
+        "completionMessage": "={{ 'Fichier : '+$('Assembler dossier de travail').first().json.output }}",
+        "options": {}
+      },
+      "name": "Confirmation",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "id": "edf04cfb-2969-467f-b2e0-4fb966158309",
+      "position": [
+        3600,
+        0
+      ],
+      "webhookId": "ebbef1e0-34ad-4c8d-95e9-349d07c690e9"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Déclencheur Manuel": {
+      "main": [
+        [
+          {
+            "node": "Valider fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valider fichier": {
+      "main": [
+        [
+          {
+            "node": "Lecture Fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lecture Fichier": {
+      "main": [
+        [
+          {
+            "node": "Décoder transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Décoder transcription": {
+      "main": [
+        [
+          {
+            "node": "Appel Atelier 1 (Dify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel Atelier 1 (Dify)": {
+      "main": [
+        [
+          {
+            "node": "Contrôler Atelier 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrôler Atelier 1": {
+      "main": [
+        [
+          {
+            "node": "Validation Humaine (Noms)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Humaine (Noms)": {
+      "main": [
+        [
+          {
+            "node": "Appliquer mapping validé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appliquer mapping validé": {
+      "main": [
+        [
+          {
+            "node": "Appel Atelier 2 (Dify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel Atelier 2 (Dify)": {
+      "main": [
+        [
+          {
+            "node": "Contrôler Atelier 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrôler Atelier 2": {
+      "main": [
+        [
+          {
+            "node": "Appel Atelier 3 (Dify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel Atelier 3 (Dify)": {
+      "main": [
+        [
+          {
+            "node": "Contrôler Atelier 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrôler Atelier 3": {
+      "main": [
+        [
+          {
+            "node": "Validation Humaine (Plan)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Humaine (Plan)": {
+      "main": [
+        [
+          {
+            "node": "Assembler dossier de travail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assembler dossier de travail": {
+      "main": [
+        [
+          {
+            "node": "Export Dossier Travail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Dossier Travail": {
+      "main": [
+        [
+          {
+            "node": "Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "63d1713b-436a-4f92-8734-28ca9c5e268d",
+  "meta": {
+    "instanceId": "3bb3d5dba388258adfcf67fc68d50872757074e4bb9ad63ae0302d9252763004"
+  },
+  "nodeGroups": [],
+  "id": "HrMNvG1WWY0B8q18",
+  "tags": []
+}
