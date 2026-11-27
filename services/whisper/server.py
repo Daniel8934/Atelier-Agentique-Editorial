@@ -5,12 +5,13 @@ from threading import Lock
 
 import ctranslate2
 from faster_whisper import WhisperModel
+from faster_whisper.audio import decode_audio
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi import HTTPException
 
 app = FastAPI(title="Atelier Editorial - Whisper API")
 
-MODEL_NAME = os.getenv("WHISPER_MODEL", "large-v3")
+MODEL_NAME = os.getenv("WHISPER_MODEL", "base")
 DEVICE = os.getenv("WHISPER_DEVICE", "cuda")
 COMPUTE_TYPE = os.getenv(
     "WHISPER_COMPUTE_TYPE", "int8_float32"
@@ -63,7 +64,7 @@ def models():
 @app.post("/v1/audio/transcriptions")
 def transcribe(
     file: UploadFile = File(...),
-    model: str = Form("large-v3"),
+    model: str = Form("base"),
     language: str = Form(None)
 ):
     if model != MODEL_NAME:
@@ -78,26 +79,107 @@ def transcribe(
             path = tmp.name
             shutil.copyfileobj(file.file, tmp)
 
-        with lock:
-            segments, info = globals()["model"].transcribe(
-                path,
-                language=language or None,
-                beam_size=5,
-                vad_filter=True
-            )
+        sample_rate = 16000
+        chunk_size = 15 * sample_rate
+        overlap = 2 * sample_rate
+        step = chunk_size - overlap
 
-            result = [
-                {
-                    "start": s.start,
-                    "end": s.end,
-                    "text": s.text.strip()
-                }
-                for s in segments
-            ]
+        audio = decode_audio(path, sampling_rate=sample_rate)
+
+        if len(audio) == 0:
+            raise HTTPException(400, "Audio vide")
+
+        result = []
+        detected_language = language or None
+        offset = 0
+
+        with lock:
+            while offset < len(audio):
+                end = min(offset + chunk_size, len(audio))
+                chunk = audio[offset:end]
+
+                segments, info = globals()["model"].transcribe(
+                    chunk,
+                    language=detected_language,
+                    beam_size=5,
+                    vad_filter=False,
+                    word_timestamps=True,
+                    condition_on_previous_text=False
+                )
+
+                detected_language = info.language
+
+                left = (
+                    0 if offset == 0
+                    else overlap / (2 * sample_rate)
+                )
+
+                right = len(chunk) / sample_rate
+
+                if end < len(audio):
+                    right -= overlap / (2 * sample_rate)
+
+                for segment in segments:
+                    words = [
+                        w for w in (segment.words or [])
+                        if left <= (w.start + w.end) / 2 < right
+                    ]
+
+                    if words:
+                        text = "".join(w.word for w in words).strip()
+
+                        if text:
+                            result.append({
+                                "start": round(
+                                    offset / sample_rate
+                                    + words[0].start, 3
+                                ),
+                                "end": round(
+                                    min(
+                                        len(audio) / sample_rate,
+                                        offset / sample_rate
+                                        + words[-1].end
+                                    ), 3
+                                ),
+                                "text": text
+                            })
+
+                    elif not segment.words:
+                        middle = (segment.start + segment.end) / 2
+
+                        if left <= middle < right and segment.text.strip():
+                            result.append({
+                                "start": round(
+                                    offset / sample_rate + segment.start, 3
+                                ),
+                                "end": round(
+                                    min(
+                                        len(audio) / sample_rate,
+                                        offset / sample_rate + segment.end
+                                    ), 3
+                                ),
+                                "text": segment.text.strip()
+                            })
+
+                print(
+                    f"Fenetre : {offset / sample_rate:.2f}"
+                    f" - {end / sample_rate:.2f} s",
+                    flush=True
+                )
+
+                if end == len(audio):
+                    break
+
+                offset += step
+
+        result.sort(key=lambda s: s["start"])
+
+        if not result:
+            raise HTTPException(422, "Aucune parole transcrite")
 
         return {
             "text": " ".join(s["text"] for s in result),
-            "language": info.language,
+            "language": detected_language,
             "segments": result
         }
 
