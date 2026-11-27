@@ -1,0 +1,179 @@
+{
+  "name": "Atelier - Ingesteur Audiovisuel & PDF (Local)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/home/daniel/projets-agentiques/Atelier-Agentique-Editorial/data",
+        "events": [
+          "add"
+        ],
+        "options": {
+          "awaitWriteFinish": true,
+          "usePolling": true
+        }
+      },
+      "id": "1",
+      "name": "Surveillance Dossier Data",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.name.split('.').pop().toLowerCase() }}",
+              "operation": "equals",
+              "value2": "pdf"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Est-ce un PDF ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        50,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3",
+      "name": "Extraire Texte PDF",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        250,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -i \"{{ $node[\"Surveillance Dossier Data\"].json.path }}\" -ar 16000 -ac 1 -c:a libmp3lame \"{{ $node[\"Surveillance Dossier Data\"].json.path.split('.').slice(0, -1).join('.') }}.mp3\""
+      },
+      "id": "4",
+      "name": "Extraction Audio (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        250,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/v1/audio/transcriptions",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "parameterType": "formBinaryData",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "large-v3"
+            }
+          ]
+        }
+      },
+      "id": "5",
+      "name": "Transcription Whisper Local",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "fileContent": "={{ $json.text || $node[\"Extraire Texte PDF\"].json.data }}",
+        "fileName": "={{ $node[\"Surveillance Dossier Data\"].json.name.split('.').slice(0, -1).join('.') }}_TRANSCRIPTION.md"
+      },
+      "id": "6",
+      "name": "Sauvegarde Markdown",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Surveillance Dossier Data": {
+      "main": [
+        [
+          {
+            "node": "Est-ce un PDF ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Est-ce un PDF ?": {
+      "main": [
+        [
+          {
+            "node": "Extraire Texte PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extraction Audio (FFmpeg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire Texte PDF": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Audio (FFmpeg)": {
+      "main": [
+        [
+          {
+            "node": "Transcription Whisper Local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcription Whisper Local": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
